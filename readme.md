@@ -68,13 +68,6 @@ Schedulers.async().runRepeating(() -> {
 }, 20, 20).bindWith(registry)
 ```
 
-## Commands
-```groovy
-CustomItems.register(Material.STONE, "ORB_OF_EXAMPLE")
-           .displayName("Orb of Example")
-           .lore("Slay girllll", "Rule the world")
-           .withNBT("Yeet")
-```
 
 ## Commands
 ```groovy
@@ -91,33 +84,6 @@ Events.subscribe(InventoryCloseEvent.class).handler { event ->
 }
 ```
 
-## Runnable
-```groovy
-Sync.create().delay(5).interval(10).run {
-    
-}.run();
-```
-
-```groovy
-Async.create().delay(5).interval(10).run {
-    
-}.run();
-```
-
-## Menu
-```groovy
-def menu = Menu.create(27, 'Hello world')
-menu.set(0, new ItemBuilder(Material.STONE).setDisplayName("Example").build(), { player -> player.sendMessage("Yeet") })
-menu.set(1, new ItemBuilder(Material.STONE).setDisplayName("Example").build())
-menu.open(player)
-```
-
-## Holograms
-```groovy
-Holograms.create(location)
-         .addLine("Hello world")
-         .spawn()
-```
 
 ## Database
 ```groovy
@@ -131,26 +97,40 @@ Database.execute("DELETE FROM table", { statement -> })
 ## CustomItems
 
 ```groovy
+package scripts.global
+
 import dev.cobblesword.cobblegroovy.tools.CC
-import me.lucko.helper.Events
+import dev.cobblesword.cobblegroovy.tools.item.CustomItem
+import dev.cobblesword.cobblegroovy.tools.item.Items
+import me.lucko.helper.Commands
+import org.bukkit.Location
 import org.bukkit.Material
-import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.block.Block
+import org.bukkit.block.BlockFace
+import org.bukkit.entity.Player
+import org.bukkit.event.player.PlayerMoveEvent
 
-def lemonItem = CustomItem.create(Material.GOLD_BLOCK, "LEMON")
-        .displayName("Lemon")
-        .LoreSupplier { player, item ->
-            return [CC.red + "Sour", "Owner: " + item.getNBTString("owner")]
-        }
-        .onConsume { player, item ->
-            player.sendMessage("Too sour!")
-        }
-        .build()
+// create new item, cheese that when eld leaves a trail of sponges
+CustomItem cheese = Items.create("CHEESE", Material.SPONGE)
+        .displayName(CC.bYellow + "Cheese")
+        .subscribe(PlayerMoveEvent.class, (e, item, customItem) -> {
+            Player player = e.getPlayer();
+            Location location = player.getLocation();
+            Block block = location.getBlock();
+            Block standingBlock = block.getRelative(BlockFace.DOWN);
 
-Events.subscribe(BlockBreakEvent.class).handler{ e ->
-    Block block = e.getBlock()
-    if(block.getType() == Material.JUNGLE_LEAVES)
-    {
-        DropItem(lemonItem, block)
-    }
-}
+            if (standingBlock.getType() != Material.AIR) {
+                standingBlock.setType(Material.SPONGE);
+            }
+        })
+cheese.bindWith(registry)
+
+// Give new custom item
+Commands.create().assertPlayer()
+        .handler{cmd ->
+            var sender = cmd.sender()
+            sender.getInventory().addItem(cheese.getItemStack())
+        }.registerAndBind(registry, "cheese")
 ```
+
+For more info on the api, look at lucko's helper repository's wiki
